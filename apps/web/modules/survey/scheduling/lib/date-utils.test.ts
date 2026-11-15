@@ -93,4 +93,18 @@ describe("survey scheduling date utils", () => {
     expect(SURVEY_SCHEDULING_LOCAL_HOUR).toBe(0);
     expect(SURVEY_SCHEDULING_LOCAL_MINUTE).toBe(0);
   });
+
+  test("normalizes correctly for timezones at or east of UTC+12 (Pacific/Auckland)", () => {
+    const { normalizeDateOnlySelectionToSurveySchedulingDateTime: normalize } =
+      createSurveySchedulingDateUtils({
+        timeZone: "Pacific/Auckland",
+        localHour: 0,
+        localMinute: 0,
+      });
+    const storedDate = new Date("2026-11-19T12:00:00.000Z");
+
+    // 2026-11-19 00:00 in Pacific/Auckland (+13 DST) is 2026-11-18 11:00 UTC.
+    // Without the fix, reading noon UTC in Auckland yields 2026-11-20 (one day late).
+    expect(normalize(storedDate)?.toISOString()).toBe("2026-11-18T11:00:00.000Z");
+  });
 });

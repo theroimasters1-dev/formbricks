@@ -155,7 +155,23 @@ export const createSurveySchedulingDateUtils = (config: TSurveySchedulingConfig)
       return null;
     }
 
-    const { day, month, year } = getTimeZoneDateParts(date);
+    // A date-only selection is serialized as noon UTC (DATE_ONLY_SELECTION_UTC_HOUR = 12).
+    // In timezones at UTC+12 or later (e.g. Pacific/Auckland, Fiji), formatting noon UTC
+    // in that timezone lands on the following calendar day. When the date matches the noon UTC
+    // selection convention, extract the picked calendar year, month, and day directly in UTC.
+    // Otherwise (for already normalized or legacy dates), evaluate in the configured timezone.
+    const isDateOnly =
+      date.getUTCHours() === DATE_ONLY_SELECTION_UTC_HOUR &&
+      date.getUTCMinutes() === 0 &&
+      date.getUTCSeconds() === 0;
+
+    const { day, month, year } = isDateOnly
+      ? {
+          day: date.getUTCDate(),
+          month: date.getUTCMonth() + 1,
+          year: date.getUTCFullYear(),
+        }
+      : getTimeZoneDateParts(date);
 
     return createSurveySchedulingDateTime(year, month - 1, day);
   };
